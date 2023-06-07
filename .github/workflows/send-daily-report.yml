@@ -37,7 +37,7 @@ jobs:
         run: yarn start
 
       - name: Send email
-        uses: devellany/send-mailer@v1.0.2
+        uses: devellany/send-mail
         with:
           host: smtp.google.com
           port: 465
