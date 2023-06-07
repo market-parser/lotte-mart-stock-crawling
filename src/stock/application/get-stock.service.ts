@@ -12,20 +12,20 @@ export class GetStockService {
     constructor(private readonly client: PlaywrightLotteMarketClient, private readonly stockParser: StockParser) {
     }
 
-    async findAllByMarketsAndKeyword(markets: Market[], keyword: string): Promise<Stock[]> {
+    async findAllByMarketsAndKeyword(markets: Market[], keyword: string, manufacturers: string[]): Promise<Stock[]> {
         const stocks = []
         for (const market of markets) {
-            stocks.push(...await this.findAllByMarketAndKeyword(market, keyword))
+            stocks.push(...await this.findAllByMarketAndKeyword(market, keyword, manufacturers))
         }
         return stocks
     }
 
-    async findAllByMarketAndKeyword(market: Market, keyword: string): Promise<Stock[]> {
+    async findAllByMarketAndKeyword(market: Market, keyword: string, manufacturers: string[]): Promise<Stock[]> {
         const stocks: Stock[] = []
         let pageNumber = GetStockService.START_PAGE_NUMBER
 
         while (true) {
-            const paginatedStocks = await this.findAllByMarketAndKeywordAndPageNumber(market, keyword, pageNumber)
+            const paginatedStocks = await this.findAllByMarketAndKeywordAndPageNumber(market, keyword, manufacturers, pageNumber)
             if (paginatedStocks.length === 0) {
                 break
             }
@@ -36,14 +36,16 @@ export class GetStockService {
         return stocks
     }
 
-    private async findAllByMarketAndKeywordAndPageNumber(market: Market, keyword: string, pageNumber: number): Promise<Stock[]> {
+    private async findAllByMarketAndKeywordAndPageNumber(market: Market, keyword: string, manufacturers: string[], pageNumber: number): Promise<Stock[]> {
         return await this.client.get<Stock[]>('search_product_list.asp', {
             'p_market': market.code,
             'p_schWord': keyword,
             page: pageNumber
         }, async (page) => {
             const stockElements = await this.getStockElementsFromPage(page)
-            return await this.convertToStockList(market, stockElements)
+            const stocks = await this.convertToStockList(market, stockElements)
+
+            return stocks.filter((stock) => manufacturers.includes(stock.manufacturer))
         })
     }
 

@@ -9,12 +9,17 @@ import {createWriteStream} from 'fs';
 import {Stock} from "./stock/domain/stock";
 import {Market} from "./store/domain/market";
 import {logger} from "./util/logger.util";
+import dotenv from "dotenv";
 
-require("dotenv").config();
+dotenv.config();
 
-const BASE_URL: string = process.env.BASE_URL as string;
-const KEYWORD_DELIMITER: string = process.env.KEYWORD_DELIMITER as string;
-const KEYWORDS: string[] = process.env.KEYWORDS?.split(KEYWORD_DELIMITER) as string[];
+const lotteMarketWebBaseUrl: string = process.env.BASE_URL as string;
+
+const keywordDelimiter: string = process.env.KEYWORD_DELIMITER as string;
+const keywords: string[] = process.env.KEYWORDS?.split(keywordDelimiter) as string[];
+
+const manufacturerDelimiter: string = process.env.MANUFACTURER_DELIMITER as string;
+const manufacturers: string[] = process.env.MANUFACTURERS?.split(manufacturerDelimiter) as string[];
 
 async function findAllMarkets() {
     logger.info('find markets...')
@@ -22,7 +27,7 @@ async function findAllMarkets() {
     const browser = await playwright.chromium.launch({
         headless: true
     })
-    const lotteMarketClient = new PlaywrightLotteMarketClient(BASE_URL, browser)
+    const lotteMarketClient = new PlaywrightLotteMarketClient(lotteMarketWebBaseUrl, browser)
     const getMarketService = new GetMarketService(lotteMarketClient)
 
     const markets = await getMarketService.findAll();
@@ -38,10 +43,10 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
     const browser = await playwright.chromium.launch({
         headless: true
     })
-    const lotteMarketClient = new PlaywrightLotteMarketClient(BASE_URL, browser)
+    const lotteMarketClient = new PlaywrightLotteMarketClient(lotteMarketWebBaseUrl, browser)
     const stockParser = new StockParser()
     const getStockService = new GetStockService(lotteMarketClient, stockParser)
-    const stocks = await getStockService.findAllByMarketsAndKeyword(markets, keyword)
+    const stocks = await getStockService.findAllByMarketsAndKeyword(markets, keyword, manufacturers)
     await browser.close();
 
     logger.info(`${stocks.length} stocks found for ${keyword}`)
@@ -53,7 +58,7 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
     const markets = await findAllMarkets();
 
     const stocks = await Promise.all(
-        KEYWORDS.map(async (keyword) => await findStocksByMarketsAndKeyword(markets, keyword))
+        keywords.map(async (keyword) => await findStocksByMarketsAndKeyword(markets, keyword))
     ).then((stocks) => stocks.flat())
 
     stocks.sort((a, b) => {
