@@ -11,7 +11,11 @@ export class GetStockService {
     }
 
     async findAllByMarketsAndKeyword(markets: Market[], keyword: string): Promise<Stock[]> {
-        return (await Promise.all(markets.map(async (market) => await this.findAllByMarketAndKeyword(market, keyword)))).flat()
+        const stocks = []
+        for (const market of markets) {
+            stocks.push(...await this.findAllByMarketAndKeyword(market, keyword))
+        }
+        return stocks
     }
 
     async findAllByMarketAndKeyword(market: Market, keyword: string): Promise<Stock[]> {
@@ -26,7 +30,7 @@ export class GetStockService {
             stocks.push(...paginatedStocks)
             pageNumber += 1
         }
-        console.log(`${stocks.length} stocks found for ${market.name} ${keyword}`)
+        console.debug(`${stocks.length} stocks found for ${market.name} ${keyword}`)
         return stocks
     }
 
