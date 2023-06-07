@@ -36,17 +36,17 @@ jobs:
       - name: run application
         run: yarn start
 
-      - name: Send email
-        uses: devellany/send-mail@v1.0.2
+      - name: Send mail
+        uses: dawidd6/action-send-mail@v3
         with:
-          host: smtp.google.com
-          port: 465
-          account: ${{secrets.ACCOUNT}}
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{secrets.ACCOUNT}}
           password: ${{secrets.MAIL_PASSWORD}}
-          sender: market-parser
-          from: ${{secrets.FROM_MAIL_ADDRESS}}
-          to: ${{secrets.TO_MAIL_ADDRESS}}
           subject: 일간 재고 알림
+          to: ${{secrets.TO_MAIL_ADDRESS}}
+          from: Market Parser # <user@example.com>
           body: 일간 재고 알림
-          contentType: text/plain
-          attachments: '[{"path":"stocks.csv"}]'
+          attachments: stocks.csv
+          priority: normal
