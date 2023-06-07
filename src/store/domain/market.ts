@@ -1,6 +1,8 @@
+import {Area} from "./area";
+
 export class Market {
     constructor(
-        readonly area: string,
+        readonly area: Area,
         readonly name: string,
         readonly code: string,
     ) {

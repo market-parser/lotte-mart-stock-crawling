@@ -3,6 +3,8 @@ import {Market} from "../../store/domain/market";
 import {Stock} from "../domain/stock";
 import {StockParser} from "./stock.parser";
 import {ElementHandle, Page} from "playwright";
+import Pino from "pino";
+import {logger} from "../../util/logger.util";
 
 export class GetStockService {
     private static readonly START_PAGE_NUMBER = 1
@@ -30,7 +32,7 @@ export class GetStockService {
             stocks.push(...paginatedStocks)
             pageNumber += 1
         }
-        console.debug(`${stocks.length} stocks found for ${market.name} ${keyword}`)
+        logger.debug(`${stocks.length} stocks found for ${market.name} ${keyword}`)
         return stocks
     }
 

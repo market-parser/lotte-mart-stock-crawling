@@ -1,5 +1,6 @@
 import {Browser, Page} from "playwright";
 import querystring, {ParsedUrlQueryInput} from "querystring";
+import {logger} from "../util/logger.util";
 
 export class PlaywrightLotteMarketClient {
     constructor(private readonly baseUrl: string, private readonly browser: Browser) {
@@ -8,14 +9,14 @@ export class PlaywrightLotteMarketClient {
     async get<T>(path: string, query: ParsedUrlQueryInput | null = null, parseFunction: (page: Page) => Promise<T>): Promise<T> {
         let page = await this.browser.newPage();
         try {
-            console.debug(`getting ${path} with query ${JSON.stringify(query)}`)
+            logger.debug(`getting ${path} with query ${JSON.stringify(query)}`)
             const response = await page.goto(this.buildUrl(path, query), {timeout: 0})
             if (response === null || response.status() !== 200) {
                 throw new Error(`error occurred while getting ${path} with query ${JSON.stringify(query)}`)
             }
             return await parseFunction(page)
         } catch (exception) {
-            console.error(`error occurred while getting ${path} with query ${JSON.stringify(query)}`)
+            logger.error(`error occurred while getting ${path} with query ${JSON.stringify(query)}`)
             throw exception
         } finally {
             await page.close()

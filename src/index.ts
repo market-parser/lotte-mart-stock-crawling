@@ -8,16 +8,16 @@ import * as path from "path";
 import {createWriteStream} from 'fs';
 import {Stock} from "./stock/domain/stock";
 import {Market} from "./store/domain/market";
+import {logger} from "./util/logger.util";
 
-console.debug = function () {
-}
+require("dotenv").config();
 
-// TODO apply dotenv to load environment variables
-const BASE_URL = 'https://company.lottemart.com/mobiledowa/inc/asp'
-const keywords = ['하이네켄', '에델바이스']; // 타이거 맥주
+const BASE_URL: string = process.env.BASE_URL as string;
+const KEYWORD_DELIMITER: string = process.env.KEYWORD_DELIMITER as string;
+const KEYWORDS: string[] = process.env.KEYWORDS?.split(KEYWORD_DELIMITER) as string[];
 
 async function findAllMarkets() {
-    console.log('find markets...')
+    logger.info('find markets...')
 
     const browser = await playwright.chromium.launch({
         headless: true
@@ -28,12 +28,12 @@ async function findAllMarkets() {
     const markets = await getMarketService.findAll();
     await browser.close();
 
-    console.log(`${markets.length} markets found`)
+    logger.info(`${markets.length} markets found`)
     return markets;
 }
 
 async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string): Promise<Stock[]> {
-    console.log('find stocks...')
+    logger.info(`find stocks for ${keyword}...`)
 
     const browser = await playwright.chromium.launch({
         headless: true
@@ -44,16 +44,16 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
     const stocks = await getStockService.findAllByMarketsAndKeyword(markets, keyword)
     await browser.close();
 
-    console.log(`${stocks.length} stocks found`)
+    logger.info(`${stocks.length} stocks found for ${keyword}`)
     return stocks;
 }
 
 (async () => {
-    console.log('start crawling...')
+    logger.info('start crawling...')
     const markets = await findAllMarkets();
 
     const stocks = await Promise.all(
-        keywords.map(async (keyword) => await findStocksByMarketsAndKeyword(markets, keyword))
+        KEYWORDS.map(async (keyword) => await findStocksByMarketsAndKeyword(markets, keyword))
     ).then((stocks) => stocks.flat())
 
     stocks.sort((a, b) => {
@@ -68,7 +68,7 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
         return a.name.localeCompare(b.name)
     })
 
-    console.log('write stocks to csv file...')
+    logger.info('write stocks to csv file...')
     const outputPath = path.join(__dirname, '../', `${new Date().toISOString()}_stocks.csv`)
     const output = createWriteStream(outputPath, {encoding: 'utf8'});
     const parser = new AsyncParser({
@@ -85,10 +85,10 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
     }, {}, {});
     const processor = parser.parse(stocks).pipe(output);
     processor.on('finish', async () => {
-        console.log(`stocks written to ${outputPath}`)
+        logger.info(`stocks written to ${outputPath}`)
         process.exit(0);
     });
 })().catch(exception => {
-    console.error(exception)
+    logger.error(exception)
     process.exit(1);
 });
