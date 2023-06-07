@@ -68,7 +68,7 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
     })
 
     logger.info('write stocks to csv file...')
-    const outputPath = path.join(__dirname, '../', `${new Date().toISOString()}_stocks.csv`)
+    const outputPath = path.join(__dirname, '../', `stocks.csv`)
     const output = fs.createWriteStream(outputPath, {encoding: 'utf8'});
     const parser = new AsyncParser({
         fields: [
