@@ -49,10 +49,10 @@ export class AxiosGetMarketService {
 
 
     private parseNameFromMarketElement(marketElement: HTMLElement): string {
-        return marketElement.innerText
+        return marketElement.innerText?.trim()
     }
 
     private parseCodeFromMarketElement(marketElement: HTMLElement): string | null {
-        return marketElement.getAttribute('value') || null
+        return marketElement.getAttribute('value')?.trim() || null
     }
 }

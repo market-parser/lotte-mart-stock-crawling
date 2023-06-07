@@ -12,17 +12,20 @@ export class AxiosGetStockService {
     }
 
     async findAllByMarketsAndKeyword(markets: Market[], keyword: string, manufacturers: string[]): Promise<Stock[]> {
-        const marketStocks = await Promise.all(
-            markets.map(async (market) => await this.findAllByMarketAndKeyword(market, keyword, manufacturers))
-        )
-        return marketStocks.flat()
+        const marketStocks = []
+        for (const market of markets) {
+            const stocks = await this.findAllByMarketAndKeyword(market, keyword, manufacturers)
+            marketStocks.push(...stocks)
+        }
+        return marketStocks
     }
 
     async findAllByMarketAndKeyword(market: Market, keyword: string, manufacturers: string[]): Promise<Stock[]> {
         const stocks: Stock[] = []
         let pageNumber = AxiosGetStockService.START_PAGE_NUMBER
-
+        logger.debug(`find stocks for ${market.name} ${keyword}...`)
         while (true) {
+            logger.debug(`find stocks for ${market.name} ${keyword} page ${pageNumber}...`)
             const paginatedStocks = await this.findAllByMarketAndKeywordAndPageNumber(market, keyword, manufacturers, pageNumber)
             if (paginatedStocks.length === 0) {
                 break
@@ -48,7 +51,13 @@ export class AxiosGetStockService {
         const stockElements = this.getStockElements(parsedData)
         const stocks = await this.convertToStockList(market, stockElements)
 
-        return stocks.filter((stock) => manufacturers.includes(stock.manufacturer))
+        return stocks.filter((stock) => {
+            const res = manufacturers.includes(stock.manufacturer)
+            if (!res) {
+                logger.debug(`skip ${stock.manufacturer} ${stock.name}`)
+            }
+            return res
+        })
     }
 
     private getStockElements(element: HTMLElement): HTMLElement[] {
