@@ -1,10 +1,10 @@
 import {Area} from "../domain/area";
 import {PlaywrightLotteMarketClient} from "../../lotte-market/playwright-lotte-market.client";
 import {Market} from "../domain/market";
-import {isEmptyOrNull} from "../../util/object.util";
+import {isInvalidValue} from "../../util/object.util";
 import {ElementHandle, Page} from "playwright";
 
-export class GetMarketService {
+export class PlaywrightGetMarketService {
     constructor(private readonly client: PlaywrightLotteMarketClient) {
     }
 
@@ -43,7 +43,7 @@ export class GetMarketService {
     private async convertToMarket(area: Area, marketElement: ElementHandle<HTMLElementTagNameMap["option"]>): Promise<Market | null> {
         const name = await this.parseNameFromMarketElement(marketElement)
         const code = await this.parseCodeFromMarketElement(marketElement)
-        if (isEmptyOrNull(code)) {
+        if (isInvalidValue(code)) {
             return null
         }
         return new Market(area, name, code!)

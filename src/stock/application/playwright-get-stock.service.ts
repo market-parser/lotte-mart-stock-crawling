@@ -6,7 +6,7 @@ import {ElementHandle, Page} from "playwright";
 import Pino from "pino";
 import {logger} from "../../util/logger.util";
 
-export class GetStockService {
+export class PlaywrightGetStockService {
     private static readonly START_PAGE_NUMBER = 1
 
     constructor(private readonly client: PlaywrightLotteMarketClient, private readonly stockParser: StockParser) {
@@ -22,7 +22,7 @@ export class GetStockService {
 
     async findAllByMarketAndKeyword(market: Market, keyword: string, manufacturers: string[]): Promise<Stock[]> {
         const stocks: Stock[] = []
-        let pageNumber = GetStockService.START_PAGE_NUMBER
+        let pageNumber = PlaywrightGetStockService.START_PAGE_NUMBER
 
         while (true) {
             const paginatedStocks = await this.findAllByMarketAndKeywordAndPageNumber(market, keyword, manufacturers, pageNumber)

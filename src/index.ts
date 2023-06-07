@@ -1,15 +1,14 @@
-import playwright from 'playwright';
-import {GetMarketService} from "./store/application/get-market.service";
-import {PlaywrightLotteMarketClient} from "./lotte-market/playwright-lotte-market.client";
-import {GetStockService} from "./stock/application/get-stock.service";
 import {StockParser} from "./stock/application/stock.parser";
-import {AsyncParser} from "@json2csv/node";
-import * as path from "path";
-import {createWriteStream} from 'fs';
 import {Stock} from "./stock/domain/stock";
 import {Market} from "./store/domain/market";
 import {logger} from "./util/logger.util";
 import dotenv from "dotenv";
+import axios from "axios";
+import {AxiosGetMarketService} from "./store/application/axios-get-market.service";
+import {AxiosGetStockService} from "./stock/application/axios-get-stock.service";
+import * as path from "path";
+import {AsyncParser} from "@json2csv/node";
+import * as fs from "fs";
 
 dotenv.config();
 
@@ -21,17 +20,18 @@ const keywords: string[] = process.env.KEYWORDS?.split(keywordDelimiter) as stri
 const manufacturerDelimiter: string = process.env.MANUFACTURER_DELIMITER as string;
 const manufacturers: string[] = process.env.MANUFACTURERS?.split(manufacturerDelimiter) as string[];
 
+const axiosClient = axios.create({
+    baseURL: lotteMarketWebBaseUrl,
+    responseType: 'document',
+})
+const stockParser = new StockParser()
+const getMarketService = new AxiosGetMarketService(axiosClient)
+const getStockService = new AxiosGetStockService(axiosClient, stockParser)
+
 async function findAllMarkets() {
     logger.info('find markets...')
 
-    const browser = await playwright.chromium.launch({
-        headless: true
-    })
-    const lotteMarketClient = new PlaywrightLotteMarketClient(lotteMarketWebBaseUrl, browser)
-    const getMarketService = new GetMarketService(lotteMarketClient)
-
-    const markets = await getMarketService.findAll();
-    await browser.close();
+    const markets = await getMarketService.findAll()
 
     logger.info(`${markets.length} markets found`)
     return markets;
@@ -39,15 +39,7 @@ async function findAllMarkets() {
 
 async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string): Promise<Stock[]> {
     logger.info(`find stocks for ${keyword}...`)
-
-    const browser = await playwright.chromium.launch({
-        headless: true
-    })
-    const lotteMarketClient = new PlaywrightLotteMarketClient(lotteMarketWebBaseUrl, browser)
-    const stockParser = new StockParser()
-    const getStockService = new GetStockService(lotteMarketClient, stockParser)
     const stocks = await getStockService.findAllByMarketsAndKeyword(markets, keyword, manufacturers)
-    await browser.close();
 
     logger.info(`${stocks.length} stocks found for ${keyword}`)
     return stocks;
@@ -55,11 +47,13 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
 
 (async () => {
     logger.info('start crawling...')
+
     const markets = await findAllMarkets();
 
-    const stocks = await Promise.all(
+    const marketStocks = await Promise.all(
         keywords.map(async (keyword) => await findStocksByMarketsAndKeyword(markets, keyword))
-    ).then((stocks) => stocks.flat())
+    )
+    const stocks = marketStocks.flat()
 
     stocks.sort((a, b) => {
         const areaCompareResult = a.market.area.localeCompare(b.market.area)
@@ -75,7 +69,7 @@ async function findStocksByMarketsAndKeyword(markets: Market[], keyword: string)
 
     logger.info('write stocks to csv file...')
     const outputPath = path.join(__dirname, '../', `${new Date().toISOString()}_stocks.csv`)
-    const output = createWriteStream(outputPath, {encoding: 'utf8'});
+    const output = fs.createWriteStream(outputPath, {encoding: 'utf8'});
     const parser = new AsyncParser({
         fields: [
             {label: '지역', value: 'market.area'},
